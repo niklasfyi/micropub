@@ -62,12 +62,12 @@ const content = {
 		}
 		const slug = slugParts.join('-')
 		const dir = (process.env.CONTENT_DIR || 'src').replace(/\/$/, '')
-		const [ year, month, day ] = date.toISOString().split('T')[0].split('-')
-		const filename = `${dir}/${year}/${month}/${day}/${slug}.md`
+		const [year, month, day] = date.toISOString().split('T')[0].split('-')
+		const filename = `${dir}/${type}/${slug}.md`
 
 		return {
 			'filename': filename,
-			'slug': `${type}/${slug}`,
+			'slug': `${year}/${month}/${day}/${slug}`,
 			'formatted': content.output(data, clientId),
 			'data': data
 		}
