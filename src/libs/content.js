@@ -63,7 +63,11 @@ const content = {
 		const slug = slugParts.join('-')
 		const dir = (process.env.CONTENT_DIR || 'src').replace(/\/$/, '')
 		const [year, month, day] = date.toISOString().split('T')[0].split('-')
-		const filename = `${dir}/${type}/${slug}.md`
+		let datePrefix = ''
+		if (type === 'notes') {
+			datePrefix = `${year}/${month}/${day}/`
+		}
+		const filename = `${dir}/${type}/${datePrefix}${slug}.md`
 
 		return {
 			'filename': filename,
