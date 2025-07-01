@@ -134,6 +134,52 @@ describe('parse', () => {
 			expect(data.photo[0].value).toBe(likedURL)
 			expect(data.photo[0].alt).toBeTruthy()
 		})
+
+		test('checkin with location', () => {
+			const checkinJson = {
+				'type': ['h-entry'],
+				'properties': {
+					'published': ['2025-06-30T09:21:17+02:00'],
+					'syndication': ['https://www.swarmapp.com/user/1399634990/checkin/68623aeded37c54e6215ca7c'],
+					'checkin': [{
+						'type': ['h-card'],
+						'properties': {
+							'name': ['MazeMap AS'],
+							'url': ['https://foursquare.com/v/641c535d7e3e0f67a6a86e0f', 'https://www.mazemap.com'],
+							'latitude': [63.432685],
+							'longitude': [10.407206],
+							'street-address': ['Ferjemannsveien 10'],
+							'locality': ['Trondheim'],
+							'region': ['Sør-Trøndelag'],
+							'country-name': ['Norway'],
+							'postal-code': ['7042']
+						},
+						'value': 'https://foursquare.com/v/641c535d7e3e0f67a6a86e0f'
+					}],
+					'location': [{
+						'type': ['h-adr'],
+						'properties': {
+							'latitude': [63.432685],
+							'longitude': [10.407206],
+							'street-address': ['Ferjemannsveien 10'],
+							'locality': ['Trondheim'],
+							'region': ['Sør-Trøndelag'],
+							'country-name': ['Norway'],
+							'postal-code': ['7042']
+						}
+					}]
+				}
+			}
+			const data = parse.fromJSON(checkinJson)
+			expect(data).toBeTruthy()
+			expect(data.type).toBe('h-entry')
+			expect(data.published).toBe('2025-06-30T09:21:17+02:00')
+			expect(data.syndication).toBe('https://www.swarmapp.com/user/1399634990/checkin/68623aeded37c54e6215ca7c')
+			expect(data.checkin).toHaveLength(1)
+			expect(data.checkin[0].properties.name[0]).toBe('MazeMap AS')
+			expect(data.location).toHaveLength(1)
+			expect(data.location[0].properties.latitude[0]).toBe(63.432685)
+		})
 	})
 
 	describe('fromForm', () => {

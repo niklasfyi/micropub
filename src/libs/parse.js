@@ -46,6 +46,9 @@ export default {
 					}
 					if (['category', 'syndicate-to', 'photo'].includes(propKey)) {
 						parsed[propKey] = itemsToArray(propValue)
+					} else if (['checkin', 'location'].includes(propKey)) {
+						// Keep checkin and location as objects/arrays to preserve structure
+						parsed[propKey] = propValue
 					} else {
 						parsed[propKey] = getPropertyValue(propValue)
 					}

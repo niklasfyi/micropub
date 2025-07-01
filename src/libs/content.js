@@ -13,6 +13,11 @@ const ignoreProperties = [
 	'type'
 ]
 
+const complexProperties = [
+	'checkin',
+	'location'
+]
+
 const content = {
 	output: (data, clientId) => {
 		if (!data) {
@@ -22,7 +27,13 @@ const content = {
 		let output = {}
 		for (let [key, value] of Object.entries(data)) {
 			if (!ignoreProperties.includes(key)) {
-				output[renameProperties[key] || key] = value
+				const outputKey = renameProperties[key] || key
+				if (complexProperties.includes(key)) {
+					// Preserve complex object structure for checkin and location
+					output[outputKey] = value
+				} else {
+					output[outputKey] = value
+				}
 			}
 		}
 		if (clientId) {
@@ -53,6 +64,15 @@ const content = {
 			slugParts.push(utils.slugify(data.slug))
 		} else if (data.name) {
 			slugParts.push(utils.slugify(data.name))
+		} else if (data.checkin && Array.isArray(data.checkin) && data.checkin.length > 0) {
+			// Use last 5 characters from syndication URL as checkin ID
+			if (data.syndication && typeof data.syndication === 'string') {
+				const checkinId = data.syndication.slice(-5)
+				slugParts.push(checkinId)
+			} else if (Array.isArray(data.syndication) && data.syndication.length > 0) {
+				const checkinId = data.syndication[0].slice(-5)
+				slugParts.push(checkinId)
+			}
 		} else {
 			const cite = data['watch-of'] || data['read-of'] || data['listen-of'] || data['play-of']
 			if (cite && cite.properties) {
@@ -65,14 +85,21 @@ const content = {
 		const dir = (process.env.CONTENT_DIR || 'src').replace(/\/$/, '')
 		const [year, month, day] = date.toISOString().split('T')[0].split('-')
 		let datePrefix = ''
-		if (type === 'notes') {
+		if (type === 'notes' || type === 'checkins') {
 			datePrefix = `${year}/${month}/${day}/`
 		}
 		const filename = `${dir}/${type}/${datePrefix}${slug}.md`
 
+		// Build slug to match filename structure
+		let slugPath = `${type}/`
+		if (type === 'notes' || type === 'checkins') {
+			slugPath += `${year}/${month}/${day}/`
+		}
+		slugPath += slug
+
 		return {
 			'filename': filename,
-			'slug': `${year}/${month}/${day}/${slug}`,
+			'slug': slugPath,
 			'formatted': content.output(data, clientId),
 			'data': data
 		}
@@ -82,6 +109,7 @@ const content = {
 		if (!utils.objectHasKeys(data)) return null
 		if (data['like-of']) return 'likes'
 		if (data['bookmark-of']) return 'bookmarks'
+		if (data['checkin']) return 'checkins'
 		if (data['rsvp'] && data['in-reply-to']) return 'rsvp'
 		if (data['name']) return 'articles'
 		if (data['watch-of']) return 'watched'
