@@ -65,10 +65,15 @@ const content = {
 		const dir = (process.env.CONTENT_DIR || 'src').replace(/\/$/, '')
 		const [year, month, day] = date.toISOString().split('T')[0].split('-')
 		let datePrefix = ''
-		if (type === 'notes') {
+		if (type === 'notes' || type === 'checkin') {
 			datePrefix = `${year}/${month}/${day}/`
 		}
-		const filename = `${dir}/${type}/${datePrefix}${slug}.md`
+		let filename = ''
+		if (type === 'checkin') {
+			filename = `${dir}/${type}/${datePrefix}${slug}.json`
+		} else {
+			filename = `${dir}/${type}/${datePrefix}${slug}.md`
+		}
 
 		return {
 			'filename': filename,
@@ -88,6 +93,7 @@ const content = {
 		if (data['read-of']) return 'read'
 		if (data['listen-of']) return 'listen'
 		if (data['play-of']) return 'play'
+		if (data['checkin']) return 'checkin'
 		return 'notes'
 	},
 
