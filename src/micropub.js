@@ -44,7 +44,10 @@ const getHandler = async (query) => {
 			logger.info('Source found successfully')
 			return Response.send(200, res.source)
 		}
-		logger.warn('Source not found', { url: query.url, error: res?.error })
+		logger.warn('Source not found', {
+			url: query.url,
+			error: res && res.error,
+		})
 	} else if (query.q === 'syndicate-to') {
 		logger.info('Serving syndicate-to query')
 		return Response.send(200, {
@@ -52,7 +55,7 @@ const getHandler = async (query) => {
 		})
 	}
 
-	logger.warn('Invalid GET request', { query, error: res?.error })
+	logger.warn('Invalid GET request', { query, error: res && res.error })
 	return Response.error(Error.INVALID, res && res.error)
 }
 
@@ -80,7 +83,7 @@ const micropubFn = async (event) => {
 		const authResponse = await auth.isAuthorized(headers, body)
 
 		if (!authResponse || authResponse.error) {
-			logger.logAuth(false, null, null, authResponse?.error)
+			logger.logAuth(false, null, null, authResponse && authResponse.error)
 			const response = Response.error(authResponse)
 			logger.logResponse(
 				response.statusCode,
@@ -177,7 +180,7 @@ const micropubFn = async (event) => {
 			return response
 		}
 
-		logger.error('Action failed', res?.error, {
+		logger.error('Action failed', res && res.error, {
 			action,
 			client_id,
 			result: res,

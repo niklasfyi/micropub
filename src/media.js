@@ -58,7 +58,7 @@ const getHandler = async (query) => {
 		}
 	}
 
-	logger.warn('Invalid media GET request', { query, error: res?.error })
+	logger.warn('Invalid media GET request', { query, error: res && res.error })
 	return Response.error(Error.INVALID, res && res.error)
 }
 
@@ -88,7 +88,7 @@ const mediaFn = async (event) => {
 		const authResponse = await auth.isAuthorized(headers, body)
 
 		if (!authResponse || authResponse.error) {
-			logger.logAuth(false, null, null, authResponse?.error)
+			logger.logAuth(false, null, null, authResponse && authResponse.error)
 			const response = Response.error(authResponse)
 			logger.logResponse(
 				response.statusCode,
