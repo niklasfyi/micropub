@@ -1,22 +1,15 @@
-
 import matter from 'gray-matter'
 import { utils } from './utils'
 
 const renameProperties = {
-	'name': 'title',
-	'category': 'tags',
-	'published': 'date'
+	name: 'title',
+	category: 'tags',
+	published: 'date',
 }
 
-const ignoreProperties = [
-	'content',
-	'type'
-]
+const ignoreProperties = ['content', 'type']
 
-const complexProperties = [
-	'checkin',
-	'location'
-]
+const complexProperties = ['checkin', 'location']
 
 const content = {
 	output: (data, clientId) => {
@@ -47,34 +40,45 @@ const content = {
 		if (!data) {
 			return null
 		}
-		const date = new Date()
+		// Use published date if available, otherwise current date
+		let date = new Date()
+		if (data.published) {
+			date = new Date(data.published)
+		} else if (data.date) {
+			date = new Date(data.date)
+		}
+
 		if (!data.date && !data.published) {
 			data.date = date.toISOString()
 		} else {
-			data.updated = date.toISOString()
+			data.updated = new Date().toISOString()
 		}
 		const type = content.getType(data) || ''
 		let slugParts = []
-		if (process.env.FILENAME_FULL_DATE) { // Jekyll post filenames must have YYYY-MM-DD in the filename
+		if (process.env.FILENAME_FULL_DATE) {
+			// Jekyll post filenames must have YYYY-MM-DD in the filename
 			slugParts.push(date.toISOString().substr(0, 10)) // or split('T')[0]
 		}
-		// Include timestamp in filename for everything except articles
-		if (type != 'articles' && !data.slug) slugParts.push(Math.round(date / 1000))
+		// Include timestamp in filename for everything except articles and checkins
+		if (type != 'articles' && type != 'checkins' && !data.slug)
+			slugParts.push(Math.round(date / 1000))
 		if (data.slug) {
 			slugParts.push(utils.slugify(data.slug))
 		} else if (data.name) {
 			slugParts.push(utils.slugify(data.name))
-		} else if (data.checkin && Array.isArray(data.checkin) && data.checkin.length > 0) {
-			// Use last 5 characters from syndication URL as checkin ID
-			if (data.syndication && typeof data.syndication === 'string') {
-				const checkinId = data.syndication.slice(-5)
-				slugParts.push(checkinId)
-			} else if (Array.isArray(data.syndication) && data.syndication.length > 0) {
-				const checkinId = data.syndication[0].slice(-5)
-				slugParts.push(checkinId)
-			}
+		} else if (
+			data.checkin &&
+      Array.isArray(data.checkin) &&
+      data.checkin.length > 0
+		) {
+			// For checkins, use timestamp only (no extra ID from syndication URL)
+			slugParts.push(Math.round(date / 1000))
 		} else {
-			const cite = data['watch-of'] || data['read-of'] || data['listen-of'] || data['play-of']
+			const cite =
+        data['watch-of'] ||
+        data['read-of'] ||
+        data['listen-of'] ||
+        data['play-of']
 			if (cite && cite.properties) {
 				const { name, published } = cite.properties
 				name && name.length > 0 && slugParts.push(utils.slugify(name[0]))
@@ -98,14 +102,14 @@ const content = {
 		slugPath += slug
 
 		return {
-			'filename': filename,
-			'slug': slugPath,
-			'formatted': content.output(data, clientId),
-			'data': data
+			filename: filename,
+			slug: slugPath,
+			formatted: content.output(data, clientId),
+			data: data,
 		}
 	},
 
-	getType: data => {
+	getType: (data) => {
 		if (!utils.objectHasKeys(data)) return null
 		if (data['like-of']) return 'likes'
 		if (data['bookmark-of']) return 'bookmarks'
@@ -119,12 +123,12 @@ const content = {
 		return 'notes'
 	},
 
-	mediaFilename: file => {
+	mediaFilename: (file) => {
 		if (file && file.filename) {
 			let dir = (process.env.MEDIA_DIR || 'uploads').replace(/\/$/, '')
 			return `${dir}/${Math.round(new Date() / 1000)}_${file.filename}`
 		}
-	}
+	},
 }
 
 export default content

@@ -1,4 +1,3 @@
-
 import content from '../src/libs/content'
 
 describe('content', () => {
@@ -8,27 +7,29 @@ describe('content', () => {
 
 	beforeEach(() => {
 		data = {
-			'date': '2021-09-09T12:23:34.120Z',
-			'name': 'Title',
-			'category': [ 'one', 'two', 'three' ],
-			'updated': '2021-10-09T12:23:34.120Z',
-			'content': 'This is the content'
+			date: '2021-09-09T12:23:34.120Z',
+			name: 'Title',
+			category: ['one', 'two', 'three'],
+			updated: '2021-10-09T12:23:34.120Z',
+			content: 'This is the content',
 		}
 	})
 
 	describe('output', () => {
 		test('standard post', () => {
 			const fm = content.output(data)
-			expect(fm).toBe('---\n' +
-			'date: \'2021-09-09T12:23:34.120Z\'\n' +
-			'title: Title\n' +
-			'tags:\n' +
-			'  - one\n' +
-			'  - two\n' +
-			'  - three\n' +
-			'updated: \'2021-10-09T12:23:34.120Z\'\n' +
-			'---\n' +
-			'This is the content\n')
+			expect(fm).toBe(
+				'---\n' +
+          'date: \'2021-09-09T12:23:34.120Z\'\n' +
+          'title: Title\n' +
+          'tags:\n' +
+          '  - one\n' +
+          '  - two\n' +
+          '  - three\n' +
+          'updated: \'2021-10-09T12:23:34.120Z\'\n' +
+          '---\n' +
+          'This is the content\n',
+			)
 		})
 
 		test('deleted post', () => {
@@ -45,36 +46,45 @@ describe('content', () => {
 
 		test('checkin post', () => {
 			const checkinData = {
-				'published': '2025-06-30T09:21:17+02:00',
-				'syndication': ['https://www.swarmapp.com/user/1399634990/checkin/68623aeded37c54e6215ca7c'],
-				'checkin': [{
-					'type': ['h-card'],
-					'properties': {
-						'name': ['MazeMap AS'],
-						'url': ['https://foursquare.com/v/641c535d7e3e0f67a6a86e0f', 'https://www.mazemap.com'],
-						'latitude': [63.432685],
-						'longitude': [10.407206],
-						'street-address': ['Ferjemannsveien 10'],
-						'locality': ['Trondheim'],
-						'region': ['Sør-Trøndelag'],
-						'country-name': ['Norway'],
-						'postal-code': ['7042']
+				published: '2025-06-30T09:21:17+02:00',
+				syndication: [
+					'https://www.swarmapp.com/user/1399634990/checkin/68623aeded37c54e6215ca7c',
+				],
+				checkin: [
+					{
+						type: ['h-card'],
+						properties: {
+							name: ['MazeMap AS'],
+							url: [
+								'https://foursquare.com/v/641c535d7e3e0f67a6a86e0f',
+								'https://www.mazemap.com',
+							],
+							latitude: [63.432685],
+							longitude: [10.407206],
+							'street-address': ['Ferjemannsveien 10'],
+							locality: ['Trondheim'],
+							region: ['Sør-Trøndelag'],
+							'country-name': ['Norway'],
+							'postal-code': ['7042'],
+						},
+						value: 'https://foursquare.com/v/641c535d7e3e0f67a6a86e0f',
 					},
-					'value': 'https://foursquare.com/v/641c535d7e3e0f67a6a86e0f'
-				}],
-				'location': [{
-					'type': ['h-adr'],
-					'properties': {
-						'latitude': [63.432685],
-						'longitude': [10.407206],
-						'street-address': ['Ferjemannsveien 10'],
-						'locality': ['Trondheim'],
-						'region': ['Sør-Trøndelag'],
-						'country-name': ['Norway'],
-						'postal-code': ['7042']
-					}
-				}],
-				'content': 'Checked in at MazeMap AS'
+				],
+				location: [
+					{
+						type: ['h-adr'],
+						properties: {
+							latitude: [63.432685],
+							longitude: [10.407206],
+							'street-address': ['Ferjemannsveien 10'],
+							locality: ['Trondheim'],
+							region: ['Sør-Trøndelag'],
+							'country-name': ['Norway'],
+							'postal-code': ['7042'],
+						},
+					},
+				],
+				content: 'Checked in at MazeMap AS',
 			}
 			const fm = content.output(checkinData)
 			expect(fm).toContain('date: \'2025-06-30T09:21:17+02:00\'')
@@ -123,16 +133,18 @@ describe('content', () => {
 		})
 
 		test('photo post', () => {
-			data['photo'] = [ likedURL ]
+			data['photo'] = [likedURL]
 			const fm = content.output(data)
 			expect(fm).toContain(`\nphoto:\n  - '${likedURL}'`)
 		})
 
 		test('photo post with alt text', () => {
-			data['photo'] = [{
-				value: likedURL,
-				alt: 'alt-text'
-			}]
+			data['photo'] = [
+				{
+					value: likedURL,
+					alt: 'alt-text',
+				},
+			]
 			const fm = content.output(data)
 			expect(fm).toContain(`\nphoto:\n  - value: '${likedURL}'`)
 			expect(fm).toContain('alt: alt-text')
@@ -186,30 +198,34 @@ describe('content', () => {
 			expect(formatted.filename).toBe(`src/${formatted.slug}.md`)
 		})
 
-		test('is checkin', () => {
+		test('checkin uses published date for slug', () => {
 			const checkinData = {
-				'checkin': [{
-					'type': ['h-card'],
-					'properties': {
-						'name': ['MazeMap AS'],
-						'url': ['https://foursquare.com/v/641c535d7e3e0f67a6a86e0f']
-					}
-				}],
-				'syndication': 'https://www.swarmapp.com/user/1399634990/checkin/68623aeded37c54e6215ca7c'
+				published: '2025-06-30T09:21:17+02:00',
+				checkin: [
+					{
+						type: ['h-card'],
+						properties: {
+							name: ['MazeMap AS'],
+							url: ['https://foursquare.com/v/641c535d7e3e0f67a6a86e0f'],
+						},
+					},
+				],
+				syndication:
+          'https://www.swarmapp.com/user/1399634990/checkin/68623aeded37c54e6215ca7c',
 			}
 			const formatted = content.format(checkinData)
 			expect(formatted).toHaveProperty('slug')
-			expect(formatted.slug).toMatch(/^checkins\/\d{4}\/\d{2}\/\d{2}\/.*/)
-			expect(formatted.slug).toContain('a7c') // last 5 chars of syndication URL
+			expect(formatted.slug).toMatch(/^checkins\/2025\/06\/30\/.*/)
+			expect(formatted.slug).toMatch(/^checkins\/2025\/06\/30\/\d+$/) // timestamp only, no syndication URL suffix
 			expect(formatted).toHaveProperty('filename')
-			expect(formatted.filename).toMatch(/^src\/checkins\/\d{4}\/\d{2}\/\d{2}\/.*/)
+			expect(formatted.filename).toMatch(/^src\/checkins\/2025\/06\/30\/.*/)
 			expect(formatted.filename).toBe(`src/${formatted.slug}.md`)
 		})
 	})
 
 	describe('mediaFilename', () => {
 		const file = {
-			filename: 'image.png'
+			filename: 'image.png',
 		}
 		test('valid image', () => {
 			const filename = content.mediaFilename(file)
@@ -233,14 +249,14 @@ describe('content', () => {
 		})
 
 		test('is rsvp', () => {
-			const data = { 'rsvp': 'yes' }
+			const data = { rsvp: 'yes' }
 			expect(content.getType(data)).not.toBe('rsvp')
 			data['in-reply-to'] = likedURL
 			expect(content.getType(data)).toBe('rsvp')
 		})
 
 		test('is article', () => {
-			expect(content.getType({ 'name': 'hello' })).toBe('articles')
+			expect(content.getType({ name: 'hello' })).toBe('articles')
 		})
 
 		test('is watched', () => {
@@ -261,14 +277,17 @@ describe('content', () => {
 
 		test('is checkin', () => {
 			const checkinData = {
-				'checkin': [{
-					'type': ['h-card'],
-					'properties': {
-						'name': ['MazeMap AS'],
-						'url': ['https://foursquare.com/v/641c535d7e3e0f67a6a86e0f']
-					}
-				}],
-				'syndication': 'https://www.swarmapp.com/user/1399634990/checkin/68623aeded37c54e6215ca7c'
+				checkin: [
+					{
+						type: ['h-card'],
+						properties: {
+							name: ['MazeMap AS'],
+							url: ['https://foursquare.com/v/641c535d7e3e0f67a6a86e0f'],
+						},
+					},
+				],
+				syndication:
+          'https://www.swarmapp.com/user/1399634990/checkin/68623aeded37c54e6215ca7c',
 			}
 			expect(content.getType(checkinData)).toBe('checkins')
 		})
