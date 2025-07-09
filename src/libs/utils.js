@@ -24,6 +24,7 @@ const utils = {
 		return text
 			.toLowerCase()
 			.replace(/[^\w- ]+/g, '')
+			.replace(/[- ]+/g, ' ')
 			.trim()
 			.replace(/ /g, '-')
 	},
