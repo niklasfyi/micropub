@@ -59,20 +59,12 @@ const content = {
 			// Jekyll post filenames must have YYYY-MM-DD in the filename
 			slugParts.push(date.toISOString().substr(0, 10)) // or split('T')[0]
 		}
-		// Include timestamp in filename for everything except articles and checkins
-		if (type != 'articles' && type != 'checkins' && !data.slug)
+		if (!data.slug)
 			slugParts.push(Math.round(date / 1000))
 		if (data.slug) {
 			slugParts.push(utils.slugify(data.slug))
 		} else if (data.name) {
 			slugParts.push(utils.slugify(data.name))
-		} else if (
-			data.checkin &&
-      Array.isArray(data.checkin) &&
-      data.checkin.length > 0
-		) {
-			// For checkins, use timestamp only (no extra ID from syndication URL)
-			slugParts.push(Math.round(date / 1000))
 		} else {
 			const cite =
         data['watch-of'] ||
@@ -88,17 +80,12 @@ const content = {
 		const slug = slugParts.join('-')
 		const dir = (process.env.CONTENT_DIR || 'src').replace(/\/$/, '')
 		const [year, month, day] = date.toISOString().split('T')[0].split('-')
-		let datePrefix = ''
-		if (type === 'notes' || type === 'checkins') {
-			datePrefix = `${year}/${month}/${day}/`
-		}
-		const filename = `${dir}/${type}/${datePrefix}${slug}.md`
+
+		const filename = `${dir}/${type}/${year}/${month}/${day}/${slug}.md`
 
 		// Build slug to match filename structure
-		let slugPath = `${type}/`
-		if (type === 'notes' || type === 'checkins') {
-			slugPath += `${year}/${month}/${day}/`
-		}
+		let slugPath = `${type}/${year}/${month}/${day}/`
+
 		slugPath += slug
 
 		return {
