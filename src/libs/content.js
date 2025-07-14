@@ -59,8 +59,7 @@ const content = {
 			// Jekyll post filenames must have YYYY-MM-DD in the filename
 			slugParts.push(date.toISOString().substr(0, 10)) // or split('T')[0]
 		}
-		if (!data.slug)
-			slugParts.push(Math.round(date / 1000))
+		if (!data.slug) slugParts.push(Math.round(date / 1000))
 		if (data.slug) {
 			slugParts.push(utils.slugify(data.slug))
 		} else if (data.name) {
@@ -102,6 +101,7 @@ const content = {
 		if (data['bookmark-of']) return 'bookmarks'
 		if (data['checkin']) return 'checkins'
 		if (data['rsvp'] && data['in-reply-to']) return 'rsvp'
+		if (data['photo']) return 'photos'
 		if (data['name']) return 'articles'
 		if (data['watch-of']) return 'watched'
 		if (data['read-of']) return 'read'

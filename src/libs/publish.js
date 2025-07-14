@@ -1,10 +1,9 @@
-
 import GitHub from './github'
 import content from './content'
 import parse from './parse'
 import { utils } from './utils'
 
-const uploadFiles = async files => {
+const uploadFiles = async (files) => {
 	if (!files) {
 		return []
 	}
@@ -14,12 +13,18 @@ const uploadFiles = async files => {
 			const filename = content.mediaFilename(file)
 			const uploaded = await GitHub.uploadImage(filename, file)
 			if (uploaded) {
-				photos.push({ 'value': uploaded })
+				// Store just the path, not the full URL
+				photos.push({ value: uploaded })
 			}
 		} else if (file.alt || file.value) {
-			photos.push(file)
+			// If it's already a URL, strip the base URL if present
+			let value = file.value || file
+			if (typeof value === 'string' && value.startsWith(process.env.ME)) {
+				value = value.replace(process.env.ME, '')
+			}
+			photos.push(file.alt ? { value, alt: file.alt } : { value: value })
 		} else {
-			photos.push({ 'value': file })
+			photos.push({ value: file })
 		}
 	}
 	return photos
@@ -39,24 +44,28 @@ const handleUpdate = (body, parsed) => {
 		}
 		return updated ? parsed : null
 	}
-	const updates = utils.removeEmpty(parse.fromJSON({
-		'type': parsed.type,
-		'properties': body.replace || body.add || body.delete
-	}))
-	if (!updates || Object.entries(updates).length <= 1) { // `updates` always has property 'type'
+	const updates = utils.removeEmpty(
+		parse.fromJSON({
+			type: parsed.type,
+			properties: body.replace || body.add || body.delete,
+		}),
+	)
+	if (!updates || Object.entries(updates).length <= 1) {
+		// `updates` always has property 'type'
 		return
 	}
 	if (body.replace) {
 		return { ...parsed, ...updates }
 	} else {
 		for (let [key, value] of Object.entries(updates)) {
-			if (key == 'type' || key == 'photo') { // skip these properties
+			if (key == 'type' || key == 'photo') {
+				// skip these properties
 				continue
 			}
 			if (body.add) {
 				updated = true
 				if (parsed[key]) {
-					parsed[key] = [ ...parsed[key], ...value ]
+					parsed[key] = [...parsed[key], ...value]
 				} else {
 					parsed[key] = value
 				}
@@ -83,83 +92,84 @@ const publish = {
 		const parsed = isJSON ? parse.fromJSON(data) : parse.fromForm(data)
 		console.log('└─>', parsed)
 		if (parsed && parsed['like-of']) {
-			parsed.name = parsed.name || await parse.getPageTitle(parsed['like-of'])
+			parsed.name =
+        parsed.name || (await parse.getPageTitle(parsed['like-of']))
 		}
 		if (parsed && parsed.photo) {
-			parse.photo = await uploadFiles(parsed.photo)
+			parsed.photo = await uploadFiles(parsed.photo)
 		}
 		if (!utils.objectHasKeys(parsed)) {
-			return { 'error': 'nothing to add' }
+			return { error: 'nothing to add' }
 		}
 		const out = content.format(parsed, clientId)
 		if (!out || !out.filename || !out.formatted) {
-			return { 'error': 'could not parse data' }
+			return { error: 'could not parse data' }
 		}
 		const exists = await GitHub.getFile(out.filename)
 		if (exists) {
-			return { 'error': 'file exists' }
+			return { error: 'file exists' }
 		}
 		const filename = await GitHub.createFile(out.filename, out.formatted)
 		if (filename) {
-			return { 'filename': out.slug }
+			return { filename: out.slug }
 		}
 	},
 	updateContent: async (url, body) => {
 		const filename = utils.urlToFilename(url)
 		if (!filename) {
-			return { 'error': 'invalid url' }
+			return { error: 'invalid url' }
 		}
 		const exists = await GitHub.getFile(filename)
 		if (!exists) {
-			return { 'error': 'file does not exist' }
+			return { error: 'file does not exist' }
 		}
 		let parsed = parse.fromFrontMatter(exists.content)
 		if (!parsed) {
-			return { 'error': 'could not parse file' }
+			return { error: 'could not parse file' }
 		}
 		const updated = handleUpdate(body, parsed)
 		if (!updated) {
-			return { 'error': 'nothing to update' }
+			return { error: 'nothing to update' }
 		}
 		const out = content.format(updated)
 		if (!out || !out.filename || !out.formatted) {
-			return { 'error': 'could not parse data' }
+			return { error: 'could not parse data' }
 		}
 		const res = await GitHub.updateFile(filename, out.formatted, exists)
 		if (!res) {
-			return { 'error': 'file cannot be updated'}
+			return { error: 'file cannot be updated' }
 		}
-		return { 'filename': filename }
+		return { filename: filename }
 	},
 	deleteContent: async (url, permanent) => {
 		if (!permanent) {
 			return publish.updateContent(url, {
-				'add': {
-					'deleted': [ 'true' ]
-				}
+				add: {
+					deleted: ['true'],
+				},
 			})
 		}
 		const filename = utils.urlToFilename(url)
 		if (!filename) {
-			return { 'error': 'invalid url' }
+			return { error: 'invalid url' }
 		}
 		const exists = await GitHub.getFile(filename)
 		if (!exists) {
-			return { 'error': 'file does not exist' }
+			return { error: 'file does not exist' }
 		}
 		const res = await GitHub.deleteFile(filename, exists)
 		if (!res) {
-			return { 'error': 'file cannot be deleted' }
+			return { error: 'file cannot be deleted' }
 		}
-		return { 'filename': filename }
+		return { filename: filename }
 	},
 	undeleteContent: async (url) => {
 		// undelete supported even if `PERMANENT_DELETE` is true
 		// but only if file has the property `deleted`
 		return publish.updateContent(url, {
-			'delete': [ 'deleted' ]
+			delete: ['deleted'],
 		})
-	}
+	},
 }
 
 export default publish
