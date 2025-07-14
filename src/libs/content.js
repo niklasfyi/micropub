@@ -59,7 +59,6 @@ const content = {
 			// Jekyll post filenames must have YYYY-MM-DD in the filename
 			slugParts.push(date.toISOString().substr(0, 10)) // or split('T')[0]
 		}
-		if (!data.slug) slugParts.push(Math.round(date / 1000))
 		if (data.slug) {
 			slugParts.push(utils.slugify(data.slug))
 		} else if (data.name) {
@@ -74,6 +73,13 @@ const content = {
 				const { name, published } = cite.properties
 				name && name.length > 0 && slugParts.push(utils.slugify(name[0]))
 				published && published.length > 0 && slugParts.push(published[0])
+			}
+			// Only add timestamp as fallback when no other identifier is available
+			if (
+				slugParts.length === 0 ||
+        (process.env.FILENAME_FULL_DATE && slugParts.length === 1)
+			) {
+				slugParts.push(Math.round(date / 1000))
 			}
 		}
 		const slug = slugParts.join('-')
