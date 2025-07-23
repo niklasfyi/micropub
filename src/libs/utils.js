@@ -64,18 +64,26 @@ const utils = {
 	async fetchMapboxImage(lat, lon, options = {}) {
 		const {
 			zoom = 14,
-			width = 600,
-			height = 400,
-			style = 'streets-v11',
+			width = 748,
+			height = 420,
 			token = process.env.MAPBOX_TOKEN, // Store your token in env
 		} = options
 
 		if (!token) throw new Error('Mapbox token is required')
 
-		const url = `https://api.mapbox.com/styles/v1/mapbox/${style}/static/${lon},${lat},${zoom}/${width}x${height}@2x?access_token=${token}`
+		const styles = ['dark-v11', 'light-v11']
+		const urls = styles.map(
+			(style) =>
+				`https://api.mapbox.com/styles/v1/mapbox/${style}/static/${lon},${lat},${zoom}/${width}x${height}@2x?access_token=${token}`,
+		)
 
-		const response = await got(url, { responseType: 'buffer' })
-		return response.body // This is the image buffer
+		const [darkImage, lightImage] = await Promise.all(
+			urls.map((url) =>
+				got(url, { responseType: 'buffer' }).then((res) => res.body),
+			),
+		)
+
+		return { dark: darkImage, light: lightImage } // Both image buffers
 	},
 }
 

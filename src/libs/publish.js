@@ -101,14 +101,6 @@ const publish = {
 		if (!utils.objectHasKeys(parsed)) {
 			return { error: 'nothing to add' }
 		}
-		const out = content.format(parsed, clientId)
-		if (!out || !out.filename || !out.formatted) {
-			return { error: 'could not parse data' }
-		}
-		const exists = await GitHub.getFile(out.filename)
-		if (exists) {
-			return { error: 'file exists' }
-		}
 
 		// --- Mapbox integration for checkins, only if MAPBOX_TOKEN is set ---
 		if (
@@ -127,14 +119,27 @@ const publish = {
 				if (!imageBuffer) {
 					console.error('Mapbox image buffer is undefined or empty')
 				} else {
-					const imageFilename = out.filename.replace(/\.md$/, '.map.png')
-					const uploaded = await GitHub.uploadImage(imageFilename, {
+					const imageFilenameDark = out.filename.replace(
+						/\.md$/,
+						'.map.dark.png',
+					)
+					const imageFilenameLight = out.filename.replace(
+						/\.md$/,
+						'.map.light.png',
+					)
+					const uploadedDark = await GitHub.uploadImage(imageFilenameDark, {
 						content: imageBuffer,
-						filename: imageFilename,
+						filename: imageFilenameDark,
 						mimetype: 'image/png',
 					})
-					if (uploaded) {
-						parsed.map_image = uploaded
+					const uploadedLight = await GitHub.uploadImage(imageFilenameLight, {
+						content: imageBuffer,
+						filename: imageFilenameLight,
+						mimetype: 'image/png',
+					})
+					if (uploadedDark && uploadedLight) {
+						parsed.location_picture.dark = uploadedDark
+						parsed.location_picture.light = uploadedLight
 					}
 				}
 			} catch (err) {
@@ -142,6 +147,15 @@ const publish = {
 			}
 		}
 		// --- End Mapbox integration ---
+
+		const out = content.format(parsed, clientId)
+		if (!out || !out.filename || !out.formatted) {
+			return { error: 'could not parse data' }
+		}
+		const exists = await GitHub.getFile(out.filename)
+		if (exists) {
+			return { error: 'file exists' }
+		}
 
 		const filename = await GitHub.createFile(out.filename, out.formatted)
 		if (filename) {
