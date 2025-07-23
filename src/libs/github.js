@@ -25,7 +25,6 @@ const GitHub = {
 	// https://docs.github.com/en/rest/reference/repos#create-or-update-file-contents
 	uploadImage: async (filename, file) => {
 		console.log('GITHUB.uploadImage', filename, file.filename)
-		console.log('GITHUB.uploadImage', file)
 		return await GitHub.upload('PUT', filename, {
 			content: Base64.encode(file.content),
 			message: `upload: ${filename}`,

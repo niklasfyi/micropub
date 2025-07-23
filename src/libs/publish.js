@@ -129,7 +129,7 @@ const publish = {
 				} else {
 					const imageFilename = out.filename.replace(/\.md$/, '.map.png')
 					const uploaded = await GitHub.uploadImage(imageFilename, {
-						buffer: imageBuffer,
+						content: imageBuffer,
 						filename: imageFilename,
 						mimetype: 'image/png',
 					})
