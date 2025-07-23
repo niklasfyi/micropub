@@ -140,8 +140,10 @@ const publish = {
 						mimetype: 'image/png',
 					})
 					if (uploadedDark && uploadedLight) {
-						parsed.location_picture.dark = uploadedDark
-						parsed.location_picture.light = uploadedLight
+						parsed.location_picture = {
+							dark: uploadedDark,
+							light: uploadedLight,
+						}
 					}
 					out = content.format(parsed, clientId)
 				}
