@@ -130,12 +130,12 @@ const publish = {
 						'.map.light.png',
 					)
 					const uploadedDark = await GitHub.uploadImage(imageFilenameDark, {
-						content: imageBuffer,
+						content: imageBuffer.dark,
 						filename: imageFilenameDark,
 						mimetype: 'image/png',
 					})
 					const uploadedLight = await GitHub.uploadImage(imageFilenameLight, {
-						content: imageBuffer,
+						content: imageBuffer.light,
 						filename: imageFilenameLight,
 						mimetype: 'image/png',
 					})
