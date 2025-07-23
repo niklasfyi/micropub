@@ -102,6 +102,8 @@ const publish = {
 			return { error: 'nothing to add' }
 		}
 
+		let out = content.format(parsed, clientId)
+
 		// --- Mapbox integration for checkins, only if MAPBOX_TOKEN is set ---
 		if (
 			process.env.MAPBOX_TOKEN &&
@@ -141,6 +143,7 @@ const publish = {
 						parsed.location_picture.dark = uploadedDark
 						parsed.location_picture.light = uploadedLight
 					}
+					out = content.format(parsed, clientId)
 				}
 			} catch (err) {
 				console.error('Failed to fetch/upload map image:', err)
@@ -148,7 +151,6 @@ const publish = {
 		}
 		// --- End Mapbox integration ---
 
-		const out = content.format(parsed, clientId)
 		if (!out || !out.filename || !out.formatted) {
 			return { error: 'could not parse data' }
 		}
