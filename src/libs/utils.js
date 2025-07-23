@@ -1,7 +1,8 @@
+import got from 'got'
 
 const Base64 = {
-	encode: content => Buffer.from(content).toString('base64'),
-	decode: content => Buffer.from(content, 'base64').toString('utf8')
+	encode: (content) => Buffer.from(content).toString('base64'),
+	decode: (content) => Buffer.from(content, 'base64').toString('utf8'),
 }
 
 const utils = {
@@ -16,11 +17,11 @@ const utils = {
 		return allowed
 	},
 
-	isObject: obj => Object.prototype.toString.call(obj) === '[object Object]',
+	isObject: (obj) => Object.prototype.toString.call(obj) === '[object Object]',
 
-	objectHasKeys: obj => utils.isObject(obj) && !!Object.keys(obj).length,
+	objectHasKeys: (obj) => utils.isObject(obj) && !!Object.keys(obj).length,
 
-	slugify: text => {
+	slugify: (text) => {
 		return text
 			.toLowerCase()
 			.replace(/[^\w- ]+/g, '')
@@ -29,23 +30,28 @@ const utils = {
 			.replace(/ /g, '-')
 	},
 
-	removeEmpty: data => {
+	removeEmpty: (data) => {
 		for (let i in data) {
-			if (data[i] === undefined || data[i] === null ||
-				(Array.isArray(data[i]) && !data[i].length) ||
-				(utils.isObject(data[i]) && !Object.keys(data[i]).length)) {
+			if (
+				data[i] === undefined ||
+        data[i] === null ||
+        (Array.isArray(data[i]) && !data[i].length) ||
+        (utils.isObject(data[i]) && !Object.keys(data[i]).length)
+			) {
 				delete data[i]
 			}
 		}
 		return data
 	},
 
-	urlToFilename: urlString => {
+	urlToFilename: (urlString) => {
 		try {
 			const url = new URL(urlString)
-			if (url &&
-					url.origin == process.env.ME.replace(/\/$/, '') &&
-					url.pathname) {
+			if (
+				url &&
+        url.origin == process.env.ME.replace(/\/$/, '') &&
+        url.pathname
+			) {
 				const dir = (process.env.CONTENT_DIR || 'src').replace(/\/$/, '')
 				return `${dir}/${url.pathname.replace(/^\/|\/$/g, '')}.md`
 			}
@@ -53,10 +59,24 @@ const utils = {
 			console.error(err)
 			console.error('Invalid URL:', urlString)
 		}
-	}
+	},
+
+	async fetchMapboxImage(lat, lon, options = {}) {
+		const {
+			zoom = 14,
+			width = 600,
+			height = 400,
+			style = 'streets-v11',
+			token = process.env.MAPBOX_TOKEN, // Store your token in env
+		} = options
+
+		if (!token) throw new Error('Mapbox token is required')
+
+		const url = `https://api.mapbox.com/styles/v1/mapbox/${style}/static/${lon},${lat},${zoom}/${width}x${height}@2x?access_token=${token}`
+
+		const response = await got(url, { responseType: 'buffer' })
+		return response.body // This is the image buffer
+	},
 }
 
-export {
-	Base64,
-	utils
-}
+export { Base64, utils }
