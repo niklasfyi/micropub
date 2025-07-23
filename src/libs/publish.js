@@ -124,44 +124,18 @@ const publish = {
 			const lon = parsed.checkin[0].properties.longitude[0]
 			try {
 				const imageBuffer = await utils.fetchMapboxImage(lat, lon)
-				const imageFilename = out.filename.replace(/\.md$/, '.map.png')
-				const uploaded = await GitHub.uploadImage(imageFilename, {
-					buffer: imageBuffer,
-					filename: imageFilename,
-					mimetype: 'image/png',
-				})
-				if (uploaded) {
-					// Optionally, add the image path to the checkin metadata
-					parsed.map_image = uploaded
-				}
-			} catch (err) {
-				console.error('Failed to fetch/upload map image:', err)
-			}
-		}
-		// --- End Mapbox integration ---
-
-		// --- Mapbox integration for checkins ---
-		if (
-			content.getType(parsed) === 'checkins' &&
-      Array.isArray(parsed.checkin) &&
-      parsed.checkin[0] &&
-      parsed.checkin[0].properties &&
-      parsed.checkin[0].properties.latitude &&
-      parsed.checkin[0].properties.longitude
-		) {
-			const lat = parsed.checkin[0].properties.latitude[0]
-			const lon = parsed.checkin[0].properties.longitude[0]
-			try {
-				const imageBuffer = await utils.fetchMapboxImage(lat, lon)
-				const imageFilename = out.filename.replace(/\.md$/, '.map.png')
-				const uploaded = await GitHub.uploadImage(imageFilename, {
-					buffer: imageBuffer,
-					filename: imageFilename,
-					mimetype: 'image/png',
-				})
-				if (uploaded) {
-					// Optionally, add the image path to the checkin metadata
-					parsed.map_image = uploaded
+				if (!imageBuffer) {
+					console.error('Mapbox image buffer is undefined or empty')
+				} else {
+					const imageFilename = out.filename.replace(/\.md$/, '.map.png')
+					const uploaded = await GitHub.uploadImage(imageFilename, {
+						buffer: imageBuffer,
+						filename: imageFilename,
+						mimetype: 'image/png',
+					})
+					if (uploaded) {
+						parsed.map_image = uploaded
+					}
 				}
 			} catch (err) {
 				console.error('Failed to fetch/upload map image:', err)
