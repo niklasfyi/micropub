@@ -35,7 +35,7 @@ const GitHub = {
 		const body = await GitHub.request(
 			method,
 			encodeURIComponent(filename),
-			jsonBody,
+			jsonBody
 		)
 		if (body && body.content && body.content.path) {
 			return filename
@@ -47,7 +47,7 @@ const GitHub = {
 		const body = await GitHub.request(
 			'GET',
 			encodeURIComponent(filename) +
-        (process.env.GIT_BRANCH ? `?ref=${process.env.GIT_BRANCH}` : ''),
+        (process.env.GIT_BRANCH ? `?ref=${process.env.GIT_BRANCH}` : '')
 		)
 		if (body) {
 			return {
@@ -67,7 +67,7 @@ const GitHub = {
 		const body = await GitHub.request(
 			'GET',
 			encodeURIComponent(dir) +
-        (process.env.GIT_BRANCH ? `?ref=${process.env.GIT_BRANCH}` : ''),
+        (process.env.GIT_BRANCH ? `?ref=${process.env.GIT_BRANCH}` : '')
 		)
 		if (body && Array.isArray(body)) {
 			return { files: body }
@@ -82,6 +82,136 @@ const GitHub = {
 		})
 		if (body) {
 			return filename
+		}
+	},
+
+	// Create multiple files in a single commit using Git Tree API
+	createMultipleFiles: async (files, commitMessage) => {
+		console.log(
+			'GITHUB.createMultipleFiles',
+			files.map((f) => f.path)
+		)
+
+		if (process.env.DEBUG) {
+			console.log('-- DEBUGGING')
+			return files.map((f) => f.path)
+		}
+
+		try {
+			// Get the current branch reference
+			const branch = process.env.GIT_BRANCH || 'main'
+			const refResponse = await GitHub.gitRequest(
+				'GET',
+				`git/ref/heads/${branch}`
+			)
+			if (!refResponse) {
+				throw new Error(`Failed to get reference for branch ${branch}`)
+			}
+
+			// Get the current commit
+			const currentCommitSha = refResponse.object.sha
+			const commitResponse = await GitHub.gitRequest(
+				'GET',
+				`git/commits/${currentCommitSha}`
+			)
+			if (!commitResponse) {
+				throw new Error('Failed to get current commit')
+			}
+
+			// Create blobs for each file
+			const blobPromises = files.map(async (file) => {
+				const blobResponse = await GitHub.gitRequest('POST', 'git/blobs', {
+					content: Base64.encode(file.content),
+					encoding: 'base64',
+				})
+				if (!blobResponse) {
+					throw new Error(`Failed to create blob for ${file.path}`)
+				}
+				return {
+					path: file.path,
+					mode: '100644',
+					type: 'blob',
+					sha: blobResponse.sha,
+				}
+			})
+
+			const treeEntries = await Promise.all(blobPromises)
+
+			// Create new tree
+			const treeResponse = await GitHub.gitRequest('POST', 'git/trees', {
+				base_tree: commitResponse.tree.sha,
+				tree: treeEntries,
+			})
+			if (!treeResponse) {
+				throw new Error('Failed to create tree')
+			}
+
+			// Create new commit
+			const newCommitResponse = await GitHub.gitRequest('POST', 'git/commits', {
+				message: commitMessage,
+				tree: treeResponse.sha,
+				parents: [currentCommitSha],
+				...(process.env.AUTHOR_EMAIL && process.env.AUTHOR_NAME
+					? {
+						committer: {
+							email: process.env.AUTHOR_EMAIL,
+							name: process.env.AUTHOR_NAME,
+						},
+					}
+					: {}),
+			})
+			if (!newCommitResponse) {
+				throw new Error('Failed to create commit')
+			}
+
+			// Update the branch reference
+			const updateRefResponse = await GitHub.gitRequest(
+				'PATCH',
+				`git/refs/heads/${branch}`,
+				{
+					sha: newCommitResponse.sha,
+				}
+			)
+			if (!updateRefResponse) {
+				throw new Error('Failed to update branch reference')
+			}
+
+			return files.map((f) => f.path)
+		} catch (err) {
+			console.error('Failed to create multiple files:', err)
+			return null
+		}
+	},
+
+	// Git API request helper (different from Contents API)
+	gitRequest: async (method, endpoint, json) => {
+		console.log(`GITHUB.git.${method}`, endpoint)
+
+		const instance = got.extend({
+			prefixUrl: `https://api.github.com/repos/${process.env.GITHUB_USER}/${process.env.GITHUB_REPO}/`,
+			headers: {
+				accept: 'application/vnd.github.v3+json',
+				authorization: `Bearer ${process.env.GIT_TOKEN}`,
+			},
+			responseType: 'json',
+		})
+
+		const options = {
+			method: method.toUpperCase(),
+		}
+		if (json) {
+			options['Content-Type'] = 'application/json'
+			options['json'] = json
+		}
+
+		try {
+			const { body } = await instance(endpoint, options)
+			console.log('└─>', body)
+			return body
+		} catch (err) {
+			const { response } = err
+			console.error('GIT API ERROR', response.statusCode, response.body)
+			return null
 		}
 	},
 

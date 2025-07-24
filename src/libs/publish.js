@@ -129,26 +129,50 @@ const publish = {
 						/\.md$/,
 						'.map.light.png',
 					)
-					const uploadedDark = await GitHub.uploadImage(imageFilenameDark, {
-						content: imageBuffer.dark,
-						filename: imageFilenameDark,
-						mimetype: 'image/png',
-					})
-					const uploadedLight = await GitHub.uploadImage(imageFilenameLight, {
-						content: imageBuffer.light,
-						filename: imageFilenameLight,
-						mimetype: 'image/png',
-					})
-					if (uploadedDark && uploadedLight) {
-						parsed.location_picture = {
-							dark: uploadedDark,
-							light: uploadedLight,
-						}
+
+					// Set location_picture paths before formatting
+					parsed.location_picture = {
+						dark: imageFilenameDark,
+						light: imageFilenameLight,
 					}
 					out = content.format(parsed, clientId)
+
+					// Check if main file already exists
+					const exists = await GitHub.getFile(out.filename)
+					if (exists) {
+						return { error: 'file exists' }
+					}
+
+					// Create all files in a single commit
+					const filesToCommit = [
+						{
+							path: out.filename,
+							content: out.formatted
+						},
+						{
+							path: imageFilenameDark,
+							content: imageBuffer.dark
+						},
+						{
+							path: imageFilenameLight,
+							content: imageBuffer.light
+						}
+					]
+
+					const result = await GitHub.createMultipleFiles(
+						filesToCommit,
+						`add checkin: ${out.filename} with maps`
+					)
+
+					if (result) {
+						return { filename: out.slug }
+					} else {
+						return { error: 'could not create checkin files' }
+					}
 				}
 			} catch (err) {
 				console.error('Failed to fetch/upload map image:', err)
+				// Fall back to creating just the markdown file
 			}
 		}
 		// --- End Mapbox integration ---

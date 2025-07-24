@@ -9,6 +9,7 @@
     "build": "esbuild src/*.js --bundle --outdir=lambda --platform=node",
     "bump": "npm --no-git-tag-version version",
     "lint": "eslint src/**/*.js",
+    "lint:fix": "eslint src/**/*.js --fix",
     "test": "jest"
   },
   "repository": {
